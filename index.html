@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Carte interactive des appels d'offres BOAMP</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    header {
+      padding: 12px 18px;
+      background: #1f2933;
+      color: white;
+      font-size: 20px;
+    }
+    #map {
+      height: calc(100vh - 50px);
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  Carte des appels d'offres BOAMP (prototype)
+</header>
+
+<div id="map"></div>
+
+<script>
+  // Initialisation de la carte centrée sur la France
+  const map = L.map('map').setView([46.5, 2.5], 6);
+
+  // Fond de carte OpenStreetMap
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Appel API BOAMP (50 premiers résultats)
+  fetch("https://boamp-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/boamp/records?limit=50")
+    .then(response => response.json())
+    .then(data => {
+      data.results.forEach(item => {
+        if (item.geo_point_2d) {
+          const lat = item.geo_point_2d.lat;
+          const lon = item.geo_point_2d.lon;
+
+          const objet = item.objet || "Sans titre";
+          const acheteur = item.acheteur || "Non renseigné";
+          const datePub = item.date_publication || "Date inconnue";
+          const url = item.url || "#";
+
+          L.marker([lat, lon]).addTo(map)
+            .bindPopup(`
+              <b>${objet}</b><br>
+              Acheteur : ${acheteur}<br>
+              Publié le : ${datePub}<br>
+              <a href="${url}" target="_blank">Voir l'avis</a>
+            `);
+        }
+      });
+    })
+    .catch(error => {
+      console.error("Erreur lors de l'appel à l'API BOAMP :", error);
+    });
+</script>
+
+</body>
+</html>
+
