@@ -10,29 +10,30 @@
     html, body { height:100%; margin:0; }
     #map { height:100vh; }
 
-    .info, .legend{
+    .info, .legend {
       background: white;
       padding: 10px 12px;
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,.15);
       font: 14px/1.3 system-ui, -apple-system, Segoe UI, Arial;
     }
-    .legend { font-size: 12px; }
+    .legend { font-size: 12px; line-height: 1.2; }
     .legend i {
-      width: 14px;
-      height: 14px;
-      float: left;
-      margin-right: 8px;
+      width: 14px; height: 14px;
+      float: left; margin-right: 8px;
       opacity: 0.85;
     }
   </style>
 </head>
+
 <body>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 1) Vos chiffres AO par département
+    // =========================
+    // 1) Données AO par département
+    // =========================
     const ao = {
       "33": 23265, "40": 2162, "64": 1652, "24": 1572, "17": 1508, "47": 1425,
       "75": 1149, "31": 1113, "16": 1110, "86": 818,  "87": 715,  "19": 575,
@@ -48,47 +49,40 @@
       "41": 18,   "52": 17,   "73": 16,   "80": 16,   "25": 15,   "14": 14,
       "72": 14,   "02": 13,   "50": 13,   "05": 12,   "43": 12,   "42": 11,
       "53": 11,   "90": 11,   "74": 9,    "89": 9,    "48": 8,    "26": 7,
-      "70": 7,    "28": 6,    "61": 5,    "55": 4,    "58": 3,    "10": 2,
-
-      // Corse : souvent "2A" / "2B"
-      "2A": 13, "2B": 12
+      "70": 7,    "28": 6,    "61": 5,    "55": 4,    "58": 3,    "10": 2
     };
 
-    // 2) Carte
+    // =========================
+    // 2) Carte Leaflet
+    // =========================
     const map = L.map("map").setView([46.6, 2.5], 6);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18,
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    // Helpers pour lire les propriétés quelle que soit la source
-    function getDeptCode(props){
-      return props.code || props.CODE || props.code_departement || props.codeDepartement || props.dep || props.DEP;
-    }
-    function getDeptName(props){
-      return props.nom || props.NOM || props.name || props.libelle || "Département";
-    }
-
-    // 3) Boîte d’info
+    // =========================
+    // 3) Info box (top right)
+    // =========================
     const info = L.control({ position: "topright" });
-    info.onAdd = function() {
+    info.onAdd = function () {
       this._div = L.DomUtil.create("div", "info");
       this.update();
       return this._div;
     };
-    info.update = function(props) {
-      if (!props) {
-        this._div.innerHTML = "<b>Appels d'offres par département</b><br>Survolez un département";
+    info.update = function (nom, code) {
+      if (!code) {
+        this._div.innerHTML = "<b>Appels d’offres par département</b><br>Survolez un département";
         return;
       }
-      const code = getDeptCode(props);
-      const nom  = getDeptName(props);
       const n = ao[code] || 0;
       this._div.innerHTML = `<b>${nom} (${code})</b><br>${n.toLocaleString("fr-FR")} AO`;
     };
     info.addTo(map);
 
+    // =========================
     // 4) Couleurs
+    // =========================
     function getColor(n) {
       return n > 10000 ? "#800026" :
              n > 3000  ? "#BD0026" :
@@ -99,8 +93,30 @@
                          "#EEE";
     }
 
+    // =========================
+    // 5) Détection auto des champs code/nom
+    // =========================
+    function pickProp(props, candidates) {
+      for (const k of candidates) {
+        if (props && props[k] != null && String(props[k]).trim() !== "") return k;
+      }
+      return null;
+    }
+
+    // candidats fréquents (selon sources geojson)
+    const CODE_KEYS = ["code", "CODE", "dep", "DEP", "code_departement", "codeDepartement", "insee_dep", "insee"];
+    const NAME_KEYS = ["nom", "NOM", "name", "NAME", "libelle", "LIBELLE", "departement", "Département", "department"];
+
+    // =========================
+    // 6) Style + interactions
+    // =========================
+    let geoLayer;
+    let KEY_CODE = null;
+    let KEY_NAME = null;
+
     function style(feature) {
-      const code = getDeptCode(feature.properties) || "";
+      const props = feature.properties || {};
+      const code = KEY_CODE ? String(props[KEY_CODE]) : "";
       const n = ao[code] || 0;
       return {
         weight: 1,
@@ -110,14 +126,15 @@
       };
     }
 
-    // 5) Interactions
-    let geoLayer;
-
     function highlight(e) {
       const layer = e.target;
       layer.setStyle({ weight: 2, color: "#000", fillOpacity: 0.85 });
       layer.bringToFront();
-      info.update(layer.feature.properties);
+
+      const props = layer.feature.properties || {};
+      const code = String(props[KEY_CODE] ?? "");
+      const nom  = String(props[KEY_NAME] ?? "Département");
+      info.update(nom, code);
     }
 
     function reset(e) {
@@ -129,26 +146,29 @@
       layer.on({ mouseover: highlight, mouseout: reset });
 
       const props = feature.properties || {};
-      const code = getDeptCode(props);
-      const nom  = getDeptName(props);
+      const code = String(props[KEY_CODE] ?? "");
+      const nom  = String(props[KEY_NAME] ?? "Département");
       const n = ao[code] || 0;
+
       layer.bindTooltip(`${nom} (${code}) : ${n.toLocaleString("fr-FR")} AO`, { sticky: true });
     }
 
-    // 6) Légende
+    // =========================
+    // 7) Légende
+    // =========================
     const legend = L.control({ position: "bottomright" });
     legend.onAdd = function () {
       const div = L.DomUtil.create("div", "legend");
       const grades = [0, 1, 101, 301, 1001, 3001, 10001];
       div.innerHTML = "<b>Légende</b><br>";
+
       for (let i = 0; i < grades.length; i++) {
         const from = grades[i];
         const to = grades[i + 1] ? grades[i + 1] - 1 : null;
-        const label = (i === 0)
-          ? "0"
-          : (to === null)
-            ? `≥ ${from.toLocaleString("fr-FR")}`
-            : `${from.toLocaleString("fr-FR")}–${to.toLocaleString("fr-FR")}`;
+
+        const label = (i === 0) ? "0"
+          : (to === null) ? `≥ ${from.toLocaleString("fr-FR")}`
+          : `${from.toLocaleString("fr-FR")}–${to.toLocaleString("fr-FR")}`;
 
         div.innerHTML += `<div><i style="background:${getColor(from)}"></i>${label}</div>`;
       }
@@ -156,27 +176,45 @@
     };
     legend.addTo(map);
 
-    // 7) Charger le GeoJSON des départements (votre fichier du repo)
-    const DEPT_URL = "departements.geojson?v=2";
+    // =========================
+    // 8) Charger le GeoJSON des départements (votre repo)
+    // =========================
+    const DEPT_URL = "departements.geojson?v=999";
 
- fetch("departements.geojson?v=999")
-  .then(r => r.json())
-  .then(geo => {
-    // ✅ Si c'est un tableau, on le transforme en FeatureCollection
-    if (Array.isArray(geo)) {
-      geo = { type: "FeatureCollection", features: geo };
-    }
+    fetch(DEPT_URL)
+      .then(r => {
+        if (!r.ok) throw new Error("HTTP " + r.status + " sur " + DEPT_URL);
+        return r.json();
+      })
+      .then(geo => {
+        // ✅ si c’est un tableau, on le wrappe en FeatureCollection
+        if (Array.isArray(geo)) geo = { type: "FeatureCollection", features: geo };
 
-    // Debug utile
-    console.log("GeoJSON type:", geo.type, "features:", geo.features?.length);
-    console.log("Props exemple:", geo.features?.[0]?.properties);
+        if (!geo || !geo.features || !geo.features.length) {
+          throw new Error("GeoJSON vide ou sans features");
+        }
 
-    geoLayer = L.geoJSON(geo, { style, onEachFeature }).addTo(map);
+        // détecter les clés réelles à partir du 1er feature
+        const sampleProps = geo.features[0].properties || {};
+        KEY_CODE = pickProp(sampleProps, CODE_KEYS);
+        KEY_NAME = pickProp(sampleProps, NAME_KEYS);
 
-    const bounds = geoLayer.getBounds();
-    if (bounds.isValid()) map.fitBounds(bounds);
-  })
-  .catch(err => console.error("Erreur chargement départements:", err));
+        console.log("KEY_CODE:", KEY_CODE, "KEY_NAME:", KEY_NAME);
+        console.log("sample properties:", sampleProps);
+
+        if (!KEY_CODE || !KEY_NAME) {
+          throw new Error("Impossible de trouver les champs code/nom dans properties. Voir console.");
+        }
+
+        geoLayer = L.geoJSON(geo, { style, onEachFeature }).addTo(map);
+
+        const bounds = geoLayer.getBounds();
+        if (bounds.isValid()) map.fitBounds(bounds);
+      })
+      .catch(err => {
+        console.error("Erreur chargement départements:", err);
+        alert("Erreur chargement départements. Ouvrez la console (F12) → onglet Console.");
+      });
   </script>
 </body>
 </html>
