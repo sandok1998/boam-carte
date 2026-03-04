@@ -167,7 +167,11 @@
       .then(r => r.json())
       .then(geo => {
         geoLayer = L.geoJSON(geo, { style, onEachFeature }).addTo(map);
-        map.fitBounds(geoLayer.getBounds());
+
+const bounds = geoLayer.getBounds();
+if (bounds.isValid()) {
+  map.fitBounds(bounds);
+}
       })
       .catch(err => console.error("Erreur chargement départements:", err));
   </script>
