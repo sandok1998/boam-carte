@@ -9,12 +9,27 @@
   <style>
     html, body { height:100%; margin:0; }
     #map { height:100vh; }
+
     .info {
       background: white;
       padding: 10px 12px;
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,.15);
       font: 14px/1.3 system-ui, -apple-system, Segoe UI, Arial;
+    }
+    .legend {
+      background: white;
+      padding: 10px 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.15);
+      font: 12px/1.2 system-ui, -apple-system, Segoe UI, Arial;
+    }
+    .legend i {
+      width: 14px;
+      height: 14px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.85;
     }
   </style>
 </head>
@@ -23,110 +38,28 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 1) Vos chiffres AO par département (votre tableau)
+    // 1) Vos chiffres AO par département (tableau)
     const ao = {
-      "33": 23265,
-      "40": 2162,
-      "64": 1652,
-      "24": 1572,
-      "17": 1508,
-      "47": 1425,
-      "75": 1149,
-      "31": 1113,
-      "16": 1110,
-      "86": 818,
-      "87": 715,
-      "19": 575,
-      "13": 522,
-      "32": 486,
-      "79": 482,
-      "69": 469,
-      "65": 417,
-      "23": 293,
-      "34": 271,
-      "44": 247,
-      "92": 242,
-      "59": 238,
-      "46": 208,
-      "83": 200,
-      "81": 196,
-      "82": 188,
-      "12": 182,
-      "85": 181,
-      "35": 171,
-      "09": 171,
-      "66": 166,
-      "94": 155,
-      "29": 141,
-      "67": 132,
-      "93": 123,
-      "91": 116,
-      "57": 115,
-      "49": 108,
-      "78": 108,
-      "63": 104,
-      "06": 94,
-      "56": 86,
-      "45": 80,
-      "77": 80,
-      "11": 72,
-      "30": 72,
-      "76": 63,
-      "54": 59,
-      "51": 49,
-      "37": 42,
-      "95": 42,
-      "62": 40,
-      "38": 39,
-      "71": 36,
-      "01": 33,
-      "84": 29,
-      "36": 28,
-      "18": 26,
-      "21": 25,
-      "68": 24,
-      "04": 23,
-      "22": 22,
-      "03": 22,
-      "15": 21,
-      "27": 21,
-      "60": 21,
-      "41": 18,
-      "52": 17,
-      "73": 16,
-      "80": 16,
-      "25": 15,
-      "14": 14,
-      "72": 14,
-      "02": 13,
-      "50": 13,
-      "05": 12,
-      "43": 12,
-      "42": 11,
-      "53": 11,
-      "90": 11,
-      "74": 9,
-      "89": 9,
-      "48": 8,
-      "26": 7,
-      "70": 7,
-      "28": 6,
-      "61": 5,
-      "55": 4,
-      "99": 4,
-      "58": 3,
+      "33": 23265, "40": 2162, "64": 1652, "24": 1572, "17": 1508, "47": 1425,
+      "75": 1149, "31": 1113, "16": 1110, "86": 818,  "87": 715,  "19": 575,
+      "13": 522,  "32": 486,  "79": 482,  "69": 469,  "65": 417,  "23": 293,
+      "34": 271,  "44": 247,  "92": 242,  "59": 238,  "46": 208,  "83": 200,
+      "81": 196,  "82": 188,  "12": 182,  "85": 181,  "35": 171,  "09": 171,
+      "66": 166,  "94": 155,  "29": 141,  "67": 132,  "93": 123,  "91": 116,
+      "57": 115,  "49": 108,  "78": 108,  "63": 104,  "06": 94,   "56": 86,
+      "45": 80,   "77": 80,   "11": 72,   "30": 72,   "76": 63,   "54": 59,
+      "51": 49,   "37": 42,   "95": 42,   "62": 40,   "38": 39,   "71": 36,
+      "01": 33,   "84": 29,   "36": 28,   "18": 26,   "21": 25,   "68": 24,
+      "04": 23,   "22": 22,   "03": 22,   "15": 21,   "27": 21,   "60": 21,
+      "41": 18,   "52": 17,   "73": 16,   "80": 16,   "25": 15,   "14": 14,
+      "72": 14,   "02": 13,   "50": 13,   "05": 12,   "43": 12,   "42": 11,
+      "53": 11,   "90": 11,   "74": 9,    "89": 9,    "48": 8,    "26": 7,
+      "70": 7,    "28": 6,    "61": 5,    "55": 4,    "99": 4,    "58": 3,
       "10": 2,
 
       // Cas spéciaux (DOM/TOM + Corse)
-      "20A": 13,
-      "20B": 12,
-      "971": 17,
-      "972": 16,
-      "973": 11,
-      "974": 17,
-      "976": 6,
-      "987": 4,
-      "988": 6
+      "20A": 13, "20B": 12, "971": 17, "972": 16, "973": 11,
+      "974": 17, "976": 6, "987": 4, "988": 6
     };
 
     // 2) Carte
@@ -151,11 +84,11 @@
       const code = props.code;
       const nom = props.nom;
       const n = ao[code] || 0;
-      this._div.innerHTML = `<b>${nom} (${code})</b><br>${n.toLocaleString("fr-FR")} appels d’offres`;
+      this._div.innerHTML = `<b>${nom} (${code})</b><br>${n.toLocaleString("fr-FR")} AO`;
     };
     info.addTo(map);
 
-    // 4) Couleurs
+    // 4) Couleurs (classes)
     function getColor(n) {
       return n > 10000 ? "#800026" :
              n > 3000  ? "#BD0026" :
@@ -193,294 +126,50 @@
     }
 
     function onEachFeature(feature, layer) {
-      layer.on({
-        mouseover: highlight,
-        mouseout: reset
-      });
+      layer.on({ mouseover: highlight, mouseout: reset });
 
       const code = feature.properties.code;
       const nom = feature.properties.nom;
       const n = ao[code] || 0;
-      layer.bindTooltip(`${nom} (${code}) : ${n.toLocaleString("fr-FR")}`, { sticky: true });
+      layer.bindTooltip(`${nom} (${code}) : ${n.toLocaleString("fr-FR")} AO`, { sticky: true });
     }
 
-    // 6) Charger les départements
-    fetch("departements.geojson?v=1")
-      .then(r => {
-        if (!r.ok) throw new Error("departements.geojson introuvable");
-        return r.json();
-      })
+    // 6) Légende
+    const legend = L.control({ position: "bottomright" });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create("div", "legend");
+      const grades = [0, 1, 101, 301, 1001, 3001, 10001];
+      div.innerHTML = "<b>Légende</b><br>";
+      for (let i = 0; i < grades.length; i++) {
+        const from = grades[i];
+        const to = grades[i + 1] - 1;
+        const label = (i === 0)
+          ? "0"
+          : (i === grades.length - 1)
+            ? `≥ ${from.toLocaleString("fr-FR")}`
+            : `${from.toLocaleString("fr-FR")}–${to.toLocaleString("fr-FR")}`;
+
+        div.innerHTML +=
+          `<div><i style="background:${getColor(from)}"></i>${label}</div>`;
+      }
+      return div;
+    };
+    legend.addTo(map);
+
+    // 7) Charger le GeoJSON des départements
+    // OPTION A (recommandée, zéro fichier à gérer) : API geo.gouv
+    const DEPT_URL = "https://geo.api.gouv.fr/departements?geometry=contour&format=geojson";
+
+    // OPTION B (si vous avez un fichier local à la racine) :
+    // const DEPT_URL = "departements.geojson?v=1";
+
+    fetch(DEPT_URL)
+      .then(r => r.json())
       .then(geo => {
         geoLayer = L.geoJSON(geo, { style, onEachFeature }).addTo(map);
         map.fitBounds(geoLayer.getBounds());
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error("Erreur chargement départements:", err));
   </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Carte interactive BOAMP – Gironde</title>
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-  <style>
-    html, body { height: 100%; margin: 0; }
-    header{
-      padding: 12px 18px;
-      background: #1f2933;
-      color: #fff;
-      font: 600 16px/1.2 system-ui, -apple-system, Segoe UI, Arial;
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-    }
-    header small { font-weight: 400; opacity: .85; }
-    #map { height: calc(100vh - 52px); width: 100%; }
-    .badge {
-      background: rgba(255,255,255,.12);
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      white-space: nowrap;
-    }
-  </style>
-</head>
-
-<body>
-  <header>
-    <div>Carte des appels d’offres BOAMP <small>(prototype)</small></div>
-    <div class="badge" id="status">Chargement…</div>
-  </header>
-
-  <div id="map"></div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    // 1) Carte centrée Gironde
-    const map = L.map('map').setView([44.84, -0.58], 9);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
-
-    const statusEl = document.getElementById("status");
-    const setStatus = (txt) => statusEl.textContent = txt;
-
-    // Couches
-    const layerCommunes = L.layerGroup().addTo(map);
-    const layerBoamp = L.layerGroup().addTo(map);
-
-    // 2) Charger le GeoJSON des communes (doit être à la racine du repo)
-    fetch("communes.geojson?v=1") // v=1 => anti-cache (augmentez si besoin)
-      .then(r => {
-        console.log("[communes] status:", r.status);
-        if (!r.ok) throw new Error("GeoJSON communes introuvable (HTTP " + r.status + ")");
-        return r.json();
-      })
-      .then(geo => {
-        console.log("[communes] features:", geo.features?.length);
-
-        const communesLayer = L.geoJSON(geo, {
-          style: { color: "#2b7cff", weight: 1, fillOpacity: 0.12 }
-        }).addTo(layerCommunes);
-
-        // Zoom sur l'emprise des communes
-        try { map.fitBounds(communesLayer.getBounds(), { padding: [10, 10] }); } catch(e) {}
-
-        setStatus("Communes OK • chargement BOAMP…");
-      })
-      .catch(err => {
-        console.error("[communes] erreur:", err);
-        setStatus("Erreur communes (voir console F12)");
-      });
-
-    // 3) Charger des avis BOAMP (dataset Opendatasoft)
-    // IMPORTANT: tous les avis n’ont pas geo_point_2d.
-    // Filtre Gironde: on essaye via code departement / code postal quand dispo.
-    const BOAMP_URL =
-      "https://boamp-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/boamp/records" +
-      "?limit=100" +
-      "&refine=code_departement:33"; // si ce champ existe, c'est le plus simple
-
-    fetch("https://boamp-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/boamp/records?limit=5")
-  .then(r => r.json())
-  .then(data => {
-    console.log("BOAMP sample item:", data.results?.[0]);
-    console.log("BOAMP keys:", data.results?.[0] ? Object.keys(data.results[0]) : []);
-  });
-
-        let plotted = 0;
-
-        results.forEach(item => {
-          // Opendatasoft renvoie parfois geo_point_2d sous différentes formes
-          const gp = item.geo_point_2d;
-
-          if (!gp) return;
-
-          const lat = gp.lat ?? gp.latitude ?? (Array.isArray(gp) ? gp[0] : null);
-          const lon = gp.lon ?? gp.longitude ?? (Array.isArray(gp) ? gp[1] : null);
-
-          if (typeof lat !== "number" || typeof lon !== "number") return;
-
-          const objet = item.objet || "Sans titre";
-          const acheteur = item.acheteur || "Non renseigné";
-          const datePub = item.date_publication || "Date inconnue";
-          const url = item.url || item.lien || "#";
-
-          L.marker([lat, lon]).addTo(layerBoamp)
-            .bindPopup(`
-              <b>${escapeHtml(objet)}</b><br>
-              Acheteur : ${escapeHtml(acheteur)}<br>
-              Publié le : ${escapeHtml(String(datePub))}<br>
-              <a href="${url}" target="_blank" rel="noopener noreferrer">Voir l'avis</a>
-            `);
-
-          plotted++;
-        });
-
-        setStatus(`BOAMP OK • ${plotted} points`);
-      })
-      .catch(err => {
-        console.error("[boamp] erreur:", err);
-        setStatus("Erreur BOAMP (voir console F12)");
-      });
-
-    // Petite sécurité: éviter l’injection dans les popups
-    function escapeHtml(str){
-      return String(str).replace(/[&<>"']/g, s => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-      }[s]));
-    }
-  </script>
-</body>
-</html><!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<title>Carte des communes de Gironde</title>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-<style>
-#map{
-height:100vh;
-}
-</style>
-
-</head>
-<body>
-
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-
-var map = L.map('map').setView([44.84,-0.58],9);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-attribution:'© OpenStreetMap'
-}).addTo(map);
-
-fetch("communes.geojson")
-.then(response => response.json())
-.then(data => {
-
-L.geoJSON(data,{
-style:{
-color:"#2b7cff",
-weight:1,
-fillOpacity:0.15
-}
-}).addTo(map);
-
-});
-
-</script>
-
-</body>
-</html><!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <title>Carte interactive des appels d'offres BOAMP</title>
-
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-    header {
-      padding: 12px 18px;
-      background: #1f2933;
-      color: white;
-      font-size: 20px;
-    }
-    #map {
-      height: calc(100vh - 50px);
-      width: 100%;
-    }
-  </style>
-</head>
-
-<body>
-
-<header>
-  Carte des appels d'offres BOAMP (prototype)
-</header>
-
-<div id="map"></div>
-
-<script>
-  // Initialisation de la carte centrée sur la France
-  const map = L.map('map').setView([46.5, 2.5], 6);
-
-  // Fond de carte OpenStreetMap
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-
-  // Appel API BOAMP (50 premiers résultats)
-  fetch("https://boamp-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/boamp/records?limit=50")
-    .then(response => response.json())
-    .then(data => {
-      data.results.forEach(item => {
-        if (item.geo_point_2d) {
-          const lat = item.geo_point_2d.lat;
-          const lon = item.geo_point_2d.lon;
-
-          const objet = item.objet || "Sans titre";
-          const acheteur = item.acheteur || "Non renseigné";
-          const datePub = item.date_publication || "Date inconnue";
-          const url = item.url || "#";
-
-          L.marker([lat, lon]).addTo(map)
-            .bindPopup(`
-              <b>${objet}</b><br>
-              Acheteur : ${acheteur}<br>
-              Publié le : ${datePub}<br>
-              <a href="${url}" target="_blank">Voir l'avis</a>
-            `);
-        }
-      });
-    })
-    .catch(error => {
-      console.error("Erreur lors de l'appel à l'API BOAMP :", error);
-    });
-</script>
-
 </body>
 </html>
-
