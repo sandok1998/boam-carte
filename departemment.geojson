@@ -1,1 +1,30 @@
-
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "code": "01", "nom": "Ain" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[ [5.35,46.35],[5.45,46.25],[5.55,46.30],[5.60,46.40],[5.50,46.45],[5.35,46.35] ]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "code": "02", "nom": "Aisne" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[ [3.20,49.60],[3.40,49.50],[3.50,49.60],[3.45,49.70],[3.30,49.75],[3.20,49.60] ]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "code": "03", "nom": "Allier" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[ [3.00,46.30],[3.20,46.20],[3.30,46.30],[3.25,46.40],[3.10,46.45],[3.00,46.30] ]]]
+      }
+    }
+    /* … etc. pour les 101 départements … */
+  ]
+}
