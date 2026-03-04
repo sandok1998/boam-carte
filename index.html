@@ -88,15 +88,12 @@
       "?limit=100" +
       "&refine=code_departement:33"; // si ce champ existe, c'est le plus simple
 
-    fetch(BOAMP_URL)
-      .then(r => {
-        console.log("[boamp] status:", r.status);
-        if (!r.ok) throw new Error("BOAMP HTTP " + r.status);
-        return r.json();
-      })
-      .then(data => {
-        const results = data.results || [];
-        console.log("[boamp] records:", results.length);
+    fetch("https://boamp-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/boamp/records?limit=5")
+  .then(r => r.json())
+  .then(data => {
+    console.log("BOAMP sample item:", data.results?.[0]);
+    console.log("BOAMP keys:", data.results?.[0] ? Object.keys(data.results[0]) : []);
+  });
 
         let plotted = 0;
 
