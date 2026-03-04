@@ -1,4 +1,148 @@
 <!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Carte interactive BOAMP – Gironde</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    header{
+      padding: 12px 18px;
+      background: #1f2933;
+      color: #fff;
+      font: 600 16px/1.2 system-ui, -apple-system, Segoe UI, Arial;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    header small { font-weight: 400; opacity: .85; }
+    #map { height: calc(100vh - 52px); width: 100%; }
+    .badge {
+      background: rgba(255,255,255,.12);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>Carte des appels d’offres BOAMP <small>(prototype)</small></div>
+    <div class="badge" id="status">Chargement…</div>
+  </header>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // 1) Carte centrée Gironde
+    const map = L.map('map').setView([44.84, -0.58], 9);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const statusEl = document.getElementById("status");
+    const setStatus = (txt) => statusEl.textContent = txt;
+
+    // Couches
+    const layerCommunes = L.layerGroup().addTo(map);
+    const layerBoamp = L.layerGroup().addTo(map);
+
+    // 2) Charger le GeoJSON des communes (doit être à la racine du repo)
+    fetch("communes.geojson?v=1") // v=1 => anti-cache (augmentez si besoin)
+      .then(r => {
+        console.log("[communes] status:", r.status);
+        if (!r.ok) throw new Error("GeoJSON communes introuvable (HTTP " + r.status + ")");
+        return r.json();
+      })
+      .then(geo => {
+        console.log("[communes] features:", geo.features?.length);
+
+        const communesLayer = L.geoJSON(geo, {
+          style: { color: "#2b7cff", weight: 1, fillOpacity: 0.12 }
+        }).addTo(layerCommunes);
+
+        // Zoom sur l'emprise des communes
+        try { map.fitBounds(communesLayer.getBounds(), { padding: [10, 10] }); } catch(e) {}
+
+        setStatus("Communes OK • chargement BOAMP…");
+      })
+      .catch(err => {
+        console.error("[communes] erreur:", err);
+        setStatus("Erreur communes (voir console F12)");
+      });
+
+    // 3) Charger des avis BOAMP (dataset Opendatasoft)
+    // IMPORTANT: tous les avis n’ont pas geo_point_2d.
+    // Filtre Gironde: on essaye via code departement / code postal quand dispo.
+    const BOAMP_URL =
+      "https://boamp-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/boamp/records" +
+      "?limit=100" +
+      "&refine=code_departement:33"; // si ce champ existe, c'est le plus simple
+
+    fetch(BOAMP_URL)
+      .then(r => {
+        console.log("[boamp] status:", r.status);
+        if (!r.ok) throw new Error("BOAMP HTTP " + r.status);
+        return r.json();
+      })
+      .then(data => {
+        const results = data.results || [];
+        console.log("[boamp] records:", results.length);
+
+        let plotted = 0;
+
+        results.forEach(item => {
+          // Opendatasoft renvoie parfois geo_point_2d sous différentes formes
+          const gp = item.geo_point_2d;
+
+          if (!gp) return;
+
+          const lat = gp.lat ?? gp.latitude ?? (Array.isArray(gp) ? gp[0] : null);
+          const lon = gp.lon ?? gp.longitude ?? (Array.isArray(gp) ? gp[1] : null);
+
+          if (typeof lat !== "number" || typeof lon !== "number") return;
+
+          const objet = item.objet || "Sans titre";
+          const acheteur = item.acheteur || "Non renseigné";
+          const datePub = item.date_publication || "Date inconnue";
+          const url = item.url || item.lien || "#";
+
+          L.marker([lat, lon]).addTo(layerBoamp)
+            .bindPopup(`
+              <b>${escapeHtml(objet)}</b><br>
+              Acheteur : ${escapeHtml(acheteur)}<br>
+              Publié le : ${escapeHtml(String(datePub))}<br>
+              <a href="${url}" target="_blank" rel="noopener noreferrer">Voir l'avis</a>
+            `);
+
+          plotted++;
+        });
+
+        setStatus(`BOAMP OK • ${plotted} points`);
+      })
+      .catch(err => {
+        console.error("[boamp] erreur:", err);
+        setStatus("Erreur BOAMP (voir console F12)");
+      });
+
+    // Petite sécurité: éviter l’injection dans les popups
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[s]));
+    }
+  </script>
+</body>
+</html><!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8"/>
