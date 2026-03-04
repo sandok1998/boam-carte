@@ -159,23 +159,37 @@
     // 7) Charger le GeoJSON des départements (votre fichier du repo)
     const DEPT_URL = "departements.geojson?v=2";
 
-    fetch(DEPT_URL)
-      .then(r => {
-        if (!r.ok) throw new Error("HTTP " + r.status + " sur " + DEPT_URL);
-        return r.json();
-      })
-      .then(geo => {
-        console.log("[departements] type:", geo.type);
-        console.log("[departements] features:", geo.features?.length);
+   fetch(DEPT_URL)
+  .then(r => {
+    if (!r.ok) throw new Error("HTTP " + r.status + " sur " + DEPT_URL);
+    return r.json();
+  })
+  .then(raw => {
+    console.log("[departements] raw type:", typeof raw, "isArray:", Array.isArray(raw));
+    console.log("[departements] sample:", Array.isArray(raw) ? raw[0] : raw);
 
-        geoLayer = L.geoJSON(geo, { style, onEachFeature }).addTo(map);
+    // --- NORMALISATION ---
+    let geo = raw;
 
-        const bounds = geoLayer.getBounds();
-        console.log("[departements] bounds valid:", bounds.isValid());
+    // Cas 1: le fichier est un tableau de features
+    if (Array.isArray(geo)) {
+      geo = { type: "FeatureCollection", features: geo };
+    }
 
-        if (bounds.isValid()) map.fitBounds(bounds);
-      })
-      .catch(err => console.error("Erreur chargement départements:", err));
+    // Cas 2: c'est un objet mais sans features (parfois "items" ou autre)
+    if (!geo.features && geo.type !== "FeatureCollection") {
+      console.warn("Format inattendu. geo =", geo);
+    }
+
+    console.log("[departements] features:", geo.features?.length);
+
+    geoLayer = L.geoJSON(geo, { style, onEachFeature }).addTo(map);
+
+    const bounds = geoLayer.getBounds();
+    console.log("[departements] bounds valid:", bounds.isValid());
+    if (bounds.isValid()) map.fitBounds(bounds);
+  })
+  .catch(err => console.error("Erreur chargement départements:", err));
   </script>
 </body>
 </html>
