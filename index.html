@@ -163,17 +163,18 @@
     // OPTION B (si vous avez un fichier local à la racine) :
     // const DEPT_URL = "departements.geojson?v=1";
 
-    fetch(DEPT_URL)
-      .then(r => r.json())
-      .then(geo => {
-        geoLayer = L.geoJSON(geo, { style, onEachFeature }).addTo(map);
+   fetch(DEPT_URL)
+  .then(r => {
+    if (!r.ok) throw new Error("HTTP " + r.status + " sur " + DEPT_URL);
+    return r.json();
+  })
+  .then(geo => {
+    geoLayer = L.geoJSON(geo, { style, onEachFeature }).addTo(map);
 
-const bounds = geoLayer.getBounds();
-if (bounds.isValid()) {
-  map.fitBounds(bounds);
-}
-      })
-      .catch(err => console.error("Erreur chargement départements:", err));
+    const bounds = geoLayer.getBounds();
+    if (bounds.isValid()) map.fitBounds(bounds);
+  })
+  .catch(err => console.error("Erreur chargement départements:", err));
   </script>
 </body>
 </html>
